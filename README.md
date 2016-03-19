@@ -3,6 +3,10 @@
 ## zabbixMaintenance.py
 This is a tool for modifying hosts (or multiple host contained in a hostgroup).  It has the ability to disable, enable, place in maintenance mode, end a maintenance mode or even delete host(s).
 
+Requires: 
+
+* [https://github.com/blacked/py-zabbix](https://github.com/blacked/py-zabbix)
+
 
 ### Arguments
 
@@ -58,7 +62,7 @@ example-host user$ ./zabbixMaintenance.py --url https://monitor.example.com/zabb
 When you are done with your deployment you can either let the maintenance window expire or you can use the ```--end-maintenance``` flag to to update the end time of the maintenance window to the current time effectively ending the maintenance window.
 
 ### Delete
-This is helpful if you need to remove zabbix hosts when you terminate the hosts.  Perhaps as a hook in your cloudtrail host clean up processes.
+This is helpful if you need to remove zabbix hosts when you terminate the hosts.  Perhaps as a hook in your cloudtrail host clean up processes or in your unit test that may create hosts as part of their test.
 
 
 ```
