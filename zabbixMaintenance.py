@@ -211,7 +211,7 @@ class ZabbixMaintenance:
       for h in _hostgroup['hosts']:
         hosts.append(h['hostid'])
 
-      args = [ hosts ]
+      args = hosts
 
       result = self.zapi.do_request('host.delete',args)
       return result
