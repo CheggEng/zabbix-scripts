@@ -5,7 +5,7 @@ This is a tool for modifying hosts (or multiple host contained in a hostgroup). 
 
 Requires: 
 
-* [https://github.com/blacked/py-zabbix](https://github.com/blacked/py-zabbix)
+* [https://github.com/blacked/py-zabbix](https://github.com/blacked/py-zabbix) ```pip install py-zabbix``` 
 
 
 ### Arguments
