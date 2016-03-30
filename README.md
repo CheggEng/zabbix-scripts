@@ -25,6 +25,7 @@ end a maintenance mode or even delete host(s).
 optional arguments:
   -h, --help            show this help message and exit
   --hostname HOSTNAME   Hostname to modify
+  --asset-tag ASSET_TAG Find host by asset tag instead of hostname
   --hostgroup HOSTGROUP Hostgroup to modify
   --delete              Flag that indicates we want to delete the host in question
   --enable              Flag that indicates we want to enable the host in question
