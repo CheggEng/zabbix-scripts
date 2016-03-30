@@ -10,6 +10,7 @@ from os.path import basename
 
 parser = argparse.ArgumentParser(description='This is a tool for modifying hosts (or multiple host contained in a hostgroup).  It has the ability to disable, enable, place in maintenance mode, end a maintenance mode or even delete host(s).')
 parser.add_argument('--hostname', help='Hostname to modify')
+parser.add_argument('--asset-tag', help='Find host by asset tag instead of hostname')
 parser.add_argument('--hostgroup', help='Hostgroup to modify')
 parser.add_argument('--delete', help='Flag that indicates we want to delete the host in question', action="store_true")
 parser.add_argument('--enable', help='Flag that indicates we want to enable the host in question', action="store_true")
@@ -31,8 +32,8 @@ def main():
   global args
   global parser
 
-  if None == args.hostname and None == args.hostgroup:
-    print "Error: Missing --hostname or --hostgroup\n\n"
+  if None == args.hostname and None == args.hostgroup and None == args.asset_tag:
+    print "Error: Missing --hostname, --asset-tag or --hostgroup\n\n"
     parser.print_help()
     exit(1)
 
@@ -50,40 +51,40 @@ def main():
 
   if args.delete :
     zm = ZabbixMaintenance( args.url, args.user, args.password )
-    if args.hostname:
-      zm.deleteHost( args.hostname )
+    if args.hostname or args.asset_tag:
+      zm.deleteHost( args )
     elif args.hostgroup:
       zm.deleteHostgroup( args.hostgroup )
     else:
       print "Error deleting, no hostname or group specified"
   elif args.enable:
     zm = ZabbixMaintenance( args.url, args.user, args.password )
-    if args.hostname:
-      zm.enableHost( args.hostname )
+    if args.hostname or args.asset_tag:
+      zm.enableHost( args )
     elif args.hostgroup:
       zm.enableHostgroup( args.hostgroup )
     else:
       print "Error enabling, no hostname or group specified"
   elif args.disable:
     zm = ZabbixMaintenance( args.url, args.user, args.password )
-    if args.hostname:
-      zm.disableHost( args.hostname )
+    if args.hostname or args.asset_tag:
+      zm.disableHost( args )
     elif args.hostgroup:
       zm.disableHostgroup( args.hostgroup )
     else:
       print "Error enabling, no hostname or group specified"
   elif args.maintenance:
     zm = ZabbixMaintenance( args.url, args.user, args.password )
-    if args.hostname:
-      zm.maintenanceMode( args.hostname,args.maintenance_length )
+    if args.hostname or args.asset_tag:
+      zm.maintenanceMode( args,args.maintenance_length )
     elif args.hostgroup:
       zm.maintenanceModeHostgroup( args.hostgroup,args.maintenance_length )
     else:
       print "Error creating maintenance mode, no hostname or group specified"
   elif args.end_maintenance:
     zm = ZabbixMaintenance( args.url, args.user, args.password )
-    if args.hostname:
-      zm.endMaintenanceMode( args.hostname )
+    if args.hostname or args.asset_tag:
+      zm.endMaintenanceMode( args )
     elif args.hostgroup:
       zm.endMaintenanceModeHostgroup( args.hostgroup )
     else:
@@ -113,37 +114,68 @@ class ZabbixMaintenance:
         exit(-3)
       return result['result'][0]
 
-    def deleteHost(self,hostname):
-      _host = self.getHostByName(hostname)
-      args = [_host['hostid']]
+    def getHostByAssetTag(self,asset_tag):
+      args = {
+      	"output": [
+          "hostid",
+          "host"
+        ],
+        "searchInventory": {
+            "asset_tag": asset_tag
+        }
+      }
+      result = self.zapi.do_request('host.get',args)
+      if not result['result']:
+        print "No matching host found for '{}'".format(asset_tag)
+        exit(-3)
+      return result['result'][0]
 
-      result = self.zapi.do_request('host.delete',args)
+    def deleteHost(self,args):
+      if args.asset_tag:
+        _host = self.getHostByAssetTag(args.asset_tag)
+      else:
+        _host = self.getHostByName(args.hostname)
+
+      request_args = [_host['hostid']]
+
+      result = self.zapi.do_request('host.delete',request_args)
       return result
 
-    def enableHost(self,hostname):
-      _host = self.getHostByName(hostname)
-      args = {
+    def enableHost(self,args):
+      if args.asset_tag:
+        _host = self.getHostByAssetTag(args.asset_tag)
+      else:
+        _host = self.getHostByName(args.hostname)
+
+      request_args = {
         "hostid": _host['hostid'],
         "status": 0
       }
-      result = self.zapi.do_request('host.update',args)
+      result = self.zapi.do_request('host.update',request_args)
       return result
 
-    def disableHost(self,hostname):
-      _host = self.getHostByName(hostname)
-      args = {
+    def disableHost(self,args):
+      if args.asset_tag:
+        _host = self.getHostByAssetTag(args.asset_tag)
+      else:
+        _host = self.getHostByName(args.hostname)
+
+      request_args = {
         "hostid": _host['hostid'],
         "status": 1
       }
-      result = self.zapi.do_request('host.update',args)
+      result = self.zapi.do_request('host.update',request_args)
       return result
 
-    def maintenanceMode(self,hostname,timeWindow):
-      _host = self.getHostByName(hostname)
+    def maintenanceMode(self,args,timeWindow):
+      if args.asset_tag:
+        _host = self.getHostByAssetTag(args.asset_tag)
+      else:
+        _host = self.getHostByName(args.hostname)
 
       d = datetime.now()
       currentDate = d.strftime("%c")
-      args = {
+      request_args = {
         "name": "Generated by {0} on {1} for {2}".format(basename(__file__),currentDate,hostname),
         "active_since": int(time.time()),
         "active_till": int(time.time()+timeWindow),
@@ -157,7 +189,7 @@ class ZabbixMaintenance:
           }
         ]
       }
-      result = self.zapi.do_request('maintenance.create',args)
+      result = self.zapi.do_request('maintenance.create',request_args)
       return
 
 
@@ -171,8 +203,12 @@ class ZabbixMaintenance:
       result = self.zapi.do_request('maintenance.get',args)
       return result['result']
 
-    def endMaintenanceMode(self,hostname):
-      _host = self.getHostByName(hostname)
+    def endMaintenanceMode(self,args):
+      if args.asset_tag:
+        _host = self.getHostByAssetTag(args.asset_tag)
+      else:
+        _host = self.getHostByName(args.hostname)
+
       _maintenance = self.getMaintenance(_host['hostid'])
       _maintenance_ids = []
       n = int(time.time())
@@ -185,7 +221,10 @@ class ZabbixMaintenance:
           result = self.zapi.do_request('maintenance.update',maintenance_id)
 
       if not _maintenance_ids:
-        print "No valid maintenance windows defined for the host {0}".format(hostname)
+        if args.asset_tag:
+          print "No valid maintenance windows defined for the asset-tag {0}".format(args.asset_tag)
+        else:
+          print "No valid maintenance windows defined for the host {0}".format(args.hostname)
         exit(-4)
 
       return _maintenance_ids
