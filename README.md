@@ -33,7 +33,7 @@ optional arguments:
   --maintenance         Flag that indicates we want to place the host in maintenance mode
   --maintenance-length  How long in seconds to be in maintenance mode. (default: 3600)
   --end-maintenance     Flag that indicates we want to disable maintenance mode
-  --debug               nable debug mode, this will show you all the json-rpc calls and responses
+  --debug               enable debug mode, this will show you all the json-rpc calls and responses
   --url URL             URL to the zabbix server (example: https://monitor.example.com/zabbix)
   --user USER           The zabbix api user
   --password PASSWORD   The zabbix api password
