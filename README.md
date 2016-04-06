@@ -12,31 +12,38 @@ Requires:
 
 ```
 example-host user$ ./zabbixMaintenance.py -h
-usage: zabbixMaintenance.py [-h] [--hostname HOSTNAME] [--hostgroup HOSTGROUP]
-                            [--delete] [--enable] [--disable] [--maintenance]
-                            [--maintenance-length] [--end-maintenance]
-                            [--debug] --url URL --user USER --password
-                            PASSWORD
+usage: zabbixMaintenance.py [-h] [--hostname HOSTNAME] [--asset-tag ASSET_TAG]
+                            [--hostgroup HOSTGROUP] [--delete] [--create]
+                            [--ip IP] [--port PORT] [--templates TEMPLATES]
+                            [--groups GROUPS] [--enable] [--disable]
+                            [--maintenance] [--maintenance-length]
+                            [--end-maintenance] [--debug] --url URL --user
+                            USER --password PASSWORD
 
 This is a tool for modifying hosts (or multiple host contained in a
 hostgroup). It has the ability to disable, enable, place in maintenance mode,
 end a maintenance mode or even delete host(s).
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --hostname HOSTNAME   Hostname to modify
-  --asset-tag ASSET_TAG Find host by asset tag instead of hostname
-  --hostgroup HOSTGROUP Hostgroup to modify
-  --delete              Flag that indicates we want to delete the host in question
-  --enable              Flag that indicates we want to enable the host in question
-  --disable             Flag that indicates we want to disable the host in question
-  --maintenance         Flag that indicates we want to place the host in maintenance mode
-  --maintenance-length  How long in seconds to be in maintenance mode. (default: 3600)
-  --end-maintenance     Flag that indicates we want to disable maintenance mode
-  --debug               enable debug mode, this will show you all the json-rpc calls and responses
-  --url URL             URL to the zabbix server (example: https://monitor.example.com/zabbix)
-  --user USER           The zabbix api user
-  --password PASSWORD   The zabbix api password
+  -h, --help              show this help message and exit
+  --hostname HOSTNAME     Hostname to modify
+  --asset-tag ASSET_TAG   Find host by asset tag instead of hostname
+  --hostgroup HOSTGROUP   Hostgroup to modify
+  --delete                Flag that indicates we want to delete the host in question
+  --create                Flag that indicates we want to create the host in zabbix
+    --ip IP               Specify the ip for a host when creating a new host in zabbix
+    --port PORT           Specify the zabbix agent port for a host when creating a new host in zabbix. (default: 10050)
+    --templates TEMPLATES Add the following comma separated templates to a host, used when creating a new host.
+    --groups GROUPS       Add the following comma separated groups to a host, used when creating a new host
+  --enable                Flag that indicates we want to enable the host in question
+  --disable               Flag that indicates we want to disable the host in question
+  --maintenance           Flag that indicates we want to place the host in maintenance mode
+  --maintenance-length    How long in seconds to be in maintenance mode. (default: 3600)
+  --end-maintenance       Flag that indicates we want to disable maintenance mode
+  --debug                 Enable debug mode, this will show you all the json-rpc calls and responses
+  --url URL               URL to the zabbix server (example: https://monitor.example.com/zabbix)
+  --user USER             The zabbix api user
+  --password PASSWORD     The zabbix api password
 ```
 
 ### Disable Example
@@ -68,6 +75,13 @@ This is helpful if you need to remove zabbix hosts when you terminate the hosts.
 
 ```
 example-host user$ ./zabbixMaintenance.py --url https://monitor.example.com/zabbix --user jdoe --password='secret123' --hostname='web-sd8dcs2c.example.com' --delete
+```
+
+### Create
+If you need to define a new host in the zabbix server you can use the ```--create``` flag to create a new host entry in zabbix.  It accepts optional ```--templates``` & ```--groups``` flags to specify templates and groups to assign the host to.  The templates and groups should be comma separated.  Also be sure to include the ```--ip``` argument with the host IP address.
+
+```
+example-host user$ ./zabbixMaintenance.py --url https://monitor.example.com/zabbix --user jdoe --password='secret123' --hostname='web-sd8dcs2c.example.com' --ip 10.2.3.4 --templates=Linux,aws --groups=ops  --create
 ```
 
 

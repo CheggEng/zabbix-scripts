@@ -13,6 +13,11 @@ parser.add_argument('--hostname', help='Hostname to modify')
 parser.add_argument('--asset-tag', help='Find host by asset tag instead of hostname')
 parser.add_argument('--hostgroup', help='Hostgroup to modify')
 parser.add_argument('--delete', help='Flag that indicates we want to delete the host in question', action="store_true")
+parser.add_argument('--create', help='Flag that indicates we want to create the host in zabbix', action="store_true")
+parser.add_argument('--ip', help='Specify the ip for a host when creating a new host in zabbix')
+parser.add_argument('--port', help='Specify the zabbix agent port for a host when creating a new host in zabbix. (default: 10050)', default='10050')
+parser.add_argument('--templates', help='Add the following comma separated templates to a host, used when creating a new host',default='Linux')
+parser.add_argument('--groups', help='Add the following comma separated groups to a host, used when creating a new host')
 parser.add_argument('--enable', help='Flag that indicates we want to enable the host in question', action="store_true")
 parser.add_argument('--disable', help='Flag that indicates we want to disable the host in question', action="store_true")
 parser.add_argument('--maintenance', help='Flag that indicates we want to place the host in maintenance mode', action="store_true")
@@ -49,16 +54,22 @@ def main():
     print "Error: Missing --password\n\n"
     exit(4)
 
-  if args.delete :
+  try:
     zm = ZabbixMaintenance( args.url, args.user, args.password )
+  except:
+    print "Zabbix connect error, please verify --url, --user and --password"
+    exit('-10')
+
+  if args.delete:
     if args.hostname or args.asset_tag:
       zm.deleteHost( args )
     elif args.hostgroup:
       zm.deleteHostgroup( args.hostgroup )
     else:
       print "Error deleting, no hostname or group specified"
+  elif args.create:
+    zm.createHost( args )
   elif args.enable:
-    zm = ZabbixMaintenance( args.url, args.user, args.password )
     if args.hostname or args.asset_tag:
       zm.enableHost( args )
     elif args.hostgroup:
@@ -66,7 +77,6 @@ def main():
     else:
       print "Error enabling, no hostname or group specified"
   elif args.disable:
-    zm = ZabbixMaintenance( args.url, args.user, args.password )
     if args.hostname or args.asset_tag:
       zm.disableHost( args )
     elif args.hostgroup:
@@ -74,7 +84,6 @@ def main():
     else:
       print "Error enabling, no hostname or group specified"
   elif args.maintenance:
-    zm = ZabbixMaintenance( args.url, args.user, args.password )
     if args.hostname or args.asset_tag:
       zm.maintenanceMode( args,args.maintenance_length )
     elif args.hostgroup:
@@ -82,7 +91,6 @@ def main():
     else:
       print "Error creating maintenance mode, no hostname or group specified"
   elif args.end_maintenance:
-    zm = ZabbixMaintenance( args.url, args.user, args.password )
     if args.hostname or args.asset_tag:
       zm.endMaintenanceMode( args )
     elif args.hostgroup:
@@ -129,6 +137,70 @@ class ZabbixMaintenance:
         print "No matching host found for '{}'".format(asset_tag)
         exit(-3)
       return result['result'][0]
+
+    def getTemplateIDs(self, template_string):
+      templates = map(str.strip, template_string.split(",") )
+      template_ids = []
+
+      request_args = {
+        "output": "extend",
+        "filter": {
+            "host": templates
+        }
+      }
+      result = self.zapi.do_request('template.get',request_args)
+      if result['result']:
+        for t in result['result']:
+          template_ids.append({"templateid": t['templateid']})
+
+      return template_ids
+
+    def getGroupIDs(self, group_string):
+      groups = map(str.strip, group_string.split(",") )
+      group_ids = []
+
+      request_args = {
+        "output": "extend",
+        "filter": {
+            "name": groups
+        }
+      }
+      result = self.zapi.do_request('hostgroup.get',request_args)
+      if result['result']:
+        for t in result['result']:
+          group_ids.append({"groupid": t['groupid']})
+
+      return group_ids
+
+    def createHost(self, args):
+      hostname = args.hostname
+      if args.ip:
+        ip = args.ip
+      else:
+        ip = ''
+      request_args = {
+        "host": hostname,
+        "interfaces": [
+            {
+                "type": 1,
+                "main": 1,
+                "useip": 1,
+                "ip": ip,
+                "dns": hostname,
+                "port": args.port
+            }
+        ],
+        "inventory_mode": 1
+      }
+
+      if args.templates:
+        request_args['templates'] = self.getTemplateIDs(args.templates)
+
+      if args.groups:
+        request_args['groups'] = self.getGroupIDs(args.groups)
+
+      result = self.zapi.do_request('host.create',request_args)
+      return result
 
     def deleteHost(self,args):
       if args.asset_tag:
