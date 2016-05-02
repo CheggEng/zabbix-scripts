@@ -174,10 +174,24 @@ class ZabbixMaintenance:
 
     def createHost(self, args):
       hostname = args.hostname
+      cmd = 'host.create'
       if args.ip:
         ip = args.ip
       else:
         ip = ''
+
+      # We should check if this host already exists and make it an update if it is
+      search_request = {
+      	"output": [
+          "hostid",
+          "host"
+        ],
+        "filter": {
+          "host": hostname
+        }
+      }
+      search_result = self.zapi.do_request('host.get',search_request)
+
       request_args = {
         "host": hostname,
         "interfaces": [
@@ -193,14 +207,59 @@ class ZabbixMaintenance:
         "inventory_mode": 1
       }
 
+      # If we found a matching host, lets include the hostid to make this an update
+      if search_result['result']:
+        if search_result['result'][0]:
+          if search_result['result'][0]['hostid']:
+            request_args['hostid'] = search_result['result'][0]['hostid']
+            cmd = 'host.update'
+            del request_args['interfaces']
+            self.updataeInterface(search_result['result'][0]['hostid'],hostname,ip,args.port)
+
       if args.templates:
         request_args['templates'] = self.getTemplateIDs(args.templates)
 
       if args.groups:
         request_args['groups'] = self.getGroupIDs(args.groups)
 
-      result = self.zapi.do_request('host.create',request_args)
-      return result
+      try:
+        result = self.zapi.do_request(cmd,request_args)
+        return result
+      except:
+        print "Error creating host or updating host."
+        return []
+
+    def updataeInterface(self,hostid,hostname,ip,port):
+      host_search_args = {
+        "output": "extend",
+        "hostids": hostid
+      }
+
+      try:
+        host_search_result = self.zapi.do_request("hostinterface.get",host_search_args)
+
+        #Find main int
+        for zabbix_int in host_search_result['result']:
+          if zabbix_int['main'] == "1":
+            interface_update_args = {
+              "interfaceid": zabbix_int['interfaceid'],
+              "type": 1,
+              "main": 1,
+              "useip": 1,
+              "ip": ip,
+              "dns": hostname,
+              "port": port
+            }
+
+            try:
+              iterface_result = self.zapi.do_request("hostinterface.update",interface_update_args)
+              return True
+            except:
+              print "Error updating host interface."
+      except:
+        print "Error finding host interface."
+
+      return False
 
     def deleteHost(self,args):
       if args.asset_tag:
