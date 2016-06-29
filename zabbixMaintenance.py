@@ -16,6 +16,7 @@ parser.add_argument('--delete', help='Flag that indicates we want to delete the 
 parser.add_argument('--create', help='Flag that indicates we want to create the host in zabbix', action="store_true")
 parser.add_argument('--ip', help='Specify the ip for a host when creating a new host in zabbix')
 parser.add_argument('--port', help='Specify the zabbix agent port for a host when creating a new host in zabbix. (default: 10050)', default='10050')
+parser.add_argument('--proxy', help='If you are adding or updating a host and you want to specify a zabbix-proxy host to use.')
 parser.add_argument('--templates', help='Add the following comma separated templates to a host, used when creating a new host',default='Linux')
 parser.add_argument('--groups', help='Add the following comma separated groups to a host, used when creating a new host')
 parser.add_argument('--enable', help='Flag that indicates we want to enable the host in question', action="store_true")
@@ -54,11 +55,9 @@ def main():
     print "Error: Missing --password\n\n"
     exit(4)
 
-  try:
-    zm = ZabbixMaintenance( args.url, args.user, args.password )
-  except:
-    print "Zabbix connect error, please verify --url, --user and --password"
-    exit('-10')
+
+  zm = ZabbixMaintenance( args.url, args.user, args.password )
+
 
   if args.delete:
     if args.hostname or args.asset_tag:
@@ -207,6 +206,9 @@ class ZabbixMaintenance:
         "inventory_mode": 1
       }
 
+      if args.proxy:
+        request_args['proxy_hostid'] = self.findProxyID(args.proxy)
+
       # If we found a matching host, lets include the hostid to make this an update
       if search_result['result']:
         if search_result['result'][0]:
@@ -228,6 +230,24 @@ class ZabbixMaintenance:
       except:
         print "Error creating host or updating host."
         return []
+
+    def findProxyID(self,proxy):
+      cmd = 'proxy.get'
+      request_args = {
+        "output": "extend",
+        "selectInterfaces": "extend",
+        "filter": {
+          "host": proxy
+        }
+      }
+
+      try:
+        result = self.zapi.do_request(cmd,request_args)
+        return result['result'][0]['proxyid']
+      except:
+        print "Error creating host or updating host."
+        return []
+
 
     def updataeInterface(self,hostid,hostname,ip,port):
       host_search_args = {
