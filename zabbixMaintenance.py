@@ -203,7 +203,9 @@ class ZabbixMaintenance:
                 "port": args.port
             }
         ],
-        "inventory_mode": 1
+        "inventory": {
+          "inventory_mode": 1
+        }
       }
 
       if args.proxy:
