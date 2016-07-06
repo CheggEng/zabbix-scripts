@@ -203,8 +203,9 @@ class ZabbixMaintenance:
                 "port": args.port
             }
         ],
+        "inventory_mode": 1,
         "inventory": {
-          "inventory_mode": 1
+          "installer_name": "Created with zabbixMaintenance"
         }
       }
 
