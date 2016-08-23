@@ -11,9 +11,9 @@ from sys import exit
 from datetime import datetime
 
 
-parser = argparse.ArgumentParser(description='This is a tool for modifying hosts (or multiple host contained in a hostgroup).  It has the ability to disable, enable, place in maintenance mode, end a maintenance mode or even delete host(s).')
+parser = argparse.ArgumentParser(description='This is a tool to check files in AWS S3.  You can use it to check Age, contents, existence. Returns "FOUND-OK" if everything is fine.  Gives error with reason otherwise. Requires python boto. (sudo pip install boto) ')
 parser.add_argument('--url', help='path to s3 file (ex: s3://zabbix-ops/monitors/check_table_partition.txt)',required = True)
-parser.add_argument('--regex', help='Simple reges to apply to file contents')
+parser.add_argument('--regex', help='Simple regex to apply to file contents')
 parser.add_argument('--ttl', help='File age in seconds')
 parser.add_argument('--access_key', help='AWS Access key ID')
 parser.add_argument('--secret_key', help='AWS Secret Password')
