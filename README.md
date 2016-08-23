@@ -1,4 +1,53 @@
 # zabbix-scripts
+This is a collection of python scripts created by Chegg Inc to aide in our infrastructure monitoring.
+
+Table of Contents
+=================
+
+  * [zabbix-scripts](#zabbix-scripts)
+    * [check_s3_file.py](#check_s3_filepy)
+      * [Arguments](#arguments)
+    * [zabbixMaintenance.py](#zabbixmaintenancepy)
+      * [Arguments](#arguments-1)
+      * [Disable Example](#disable-example)
+      * [Maintence Mode](#maintence-mode)
+      * [Delete](#delete)
+      * [Create](#create)
+    * [zabbix.template.export.py](#zabbixtemplateexportpy)
+      * [Arguments](#arguments-2)
+    * [License](#license)
+
+
+## check_s3_file.py
+This is a tool to check files in AWS S3.  You can use it to check Age, contents, existence. Returns "FOUND-OK" if everything is fine.  Gives error with reason otherwise. Requires python boto. (sudo pip install boto). This check should work with both Nagios and Zabbix
+
+Requires: 
+
+* [https://github.com/boto/boto](https://github.com/boto/boto) ```pip install boto``` 
+
+### Arguments
+
+```
+example-host user$ ./check_s3_file.py --help
+usage: check_s3_file.py [-h] --url URL [--regex REGEX] [--ttl TTL]
+                        [--access_key ACCESS_KEY] [--secret_key SECRET_KEY]
+                        [--aws_profile AWS_PROFILE] [--debug]
+
+optional arguments:
+  -h, --help                  Show this help message and exit
+  --url URL                   Path to s3 file (ex: s3://zabbix-ops/monitors/check_special_job_output.txt)
+  --regex REGEX               Simple regex to apply to file contents
+  --ttl TTL                   File age in seconds
+  --access_key ACCESS_KEY     AWS Access key ID
+  --secret_key SECRET_KEY     AWS Secret Password
+  --aws_profile AWS_PROFILE   AWS profile to use from ~/.aws/credentials file
+  --debug                     Enable debug mode, this will show you all the json-rpc calls and responses.
+```
+
+
+
+
+
 
 ## zabbixMaintenance.py
 This is a tool for modifying hosts (or multiple host contained in a hostgroup).  It has the ability to disable, enable, place in maintenance mode, end a maintenance mode or even delete host(s).
@@ -83,6 +132,46 @@ If you need to define a new host in the zabbix server you can use the ```--creat
 ```
 example-host user$ ./zabbixMaintenance.py --url https://monitor.example.com/zabbix --user jdoe --password='secret123' --hostname='web-sd8dcs2c.example.com' --ip 10.2.3.4 --templates=Linux,aws --groups=ops  --create
 ```
+
+
+
+## zabbix.template.export.py
+This is a simple tool to export zabbix templates for backup. Please note it will always set the date on export to 1/1/2016 so git wont update unless something substantial happens.  Please note that due to a [known bug in Zabbix](https://support.zabbix.com/browse/ZBXNEXT-178) it does not currently backup Web scenarios.  This has supposedly been patched in pre-3.1.0 (trunk).
+
+Using this script you could potentialy automate backing up Zabbix templates. Here's a basic example of the process.
+
+```
+#!/bin/bash
+
+cd /var/lib/zabbix/backup
+./zabbix.template.export.py --url https://monitor.example.com/zabbix \
+	--user='zabbix-api-user' \
+	--password='super-secret' \
+	--out-dir zabbix-tempaltes
+	
+cd zabbix-tempaltes
+git add .
+git commit -am 'automated template backup'
+```
+
+### Arguments
+
+```
+example-host user$ ./zabbix.template.export.py  --help
+usage: zabbix.template.export.py [-h] [--templates TEMPLATES]
+                                 [--out-dir OUT_DIR] [--debug] --url URL
+                                 --user USER --password PASSWORD
+
+optional arguments:
+  -h, --help                  Show this help message and exit
+  --templates TEMPLATES       Name of specific template to export
+  --out-dir OUT_DIR           Directory to output templates to.
+  --debug                     Enable debug mode, this will show you all the json-rpc calls and responses
+  --url URL                   URL to the zabbix server (example: https://monitor.example.com/zabbix )
+  --user USER                 The zabbix api user
+  --password PASSWORD         The zabbix api password
+```
+
 
 
 ## License

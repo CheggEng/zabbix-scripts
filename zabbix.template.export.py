@@ -10,7 +10,7 @@ from zabbix.api import ZabbixAPI
 from sys import exit
 from datetime import datetime
 
-parser = argparse.ArgumentParser(description='This is a simple tool to export zabbix templates')
+parser = argparse.ArgumentParser(description='This is a simple tool to export zabbix templates for backup. Please note it will always set the data on export to 1/1/2016 so git wont update unless something substantial happens.')
 parser.add_argument('--templates', help='Name of specific template to export',default='All')
 parser.add_argument('--out-dir', help='Directory to output templates to.',default='./templates')
 parser.add_argument('--debug', help='Enable debug mode, this will show you all the json-rpc calls and responses', action="store_true")
