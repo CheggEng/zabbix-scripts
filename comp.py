@@ -1,2 +1,2 @@
-aws_key = "AKIAJREJ2L2BZDZNB2IA"
-aws_secret = "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"
+aws_key = "AKIAJUWDEZ3ARHZCN37Q"
+aws_secret = "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"
